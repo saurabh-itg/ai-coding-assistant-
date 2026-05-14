@@ -1,0 +1,166 @@
+MCP-Powered Local AI Engineering Assistant
+
+A local AI assistant that can:
+
+read your codebase
+analyze git history
+run terminal commands
+inspect logs
+answer engineering questions
+generate documentation
+review PR-like changes
+
+This is realistic to build solo and scales nicely into an advanced system later.
+
+Why This Is the Best Starter
+
+You already know:
+
+Python
+FastAPI
+Git/GitHub workflows
+AI/ML
+Kubernetes basics
+debugging workflows
+
+So you won’t waste time learning an unfamiliar domain.
+
+It also demonstrates:
+
+MCP connectors
+tool orchestration
+agent reasoning
+local AI infra
+practical usefulness
+Version 1 (Very Achievable)
+
+Build an assistant that can answer:
+
+“Explain this repository.”
+
+“Find risky code.”
+
+“Summarize recent changes.”
+
+“Which files relate to authentication?”
+
+“Why are tests failing?”
+
+MCP Connectors To Build
+
+Keep it minimal initially.
+
+Connector 1 — Filesystem MCP
+
+Expose:
+
+list files
+read file
+search code
+retrieve docs
+
+This alone is powerful.
+
+Connector 2 — Git MCP
+
+Expose:
+
+recent commits
+changed files
+branch diff
+blame info
+Connector 3 — Terminal MCP
+
+Expose controlled commands:
+
+pytest
+ls
+grep
+docker ps
+
+Add allowlists for safety.
+
+Architecture
+User
+  ↓
+Agent
+  ↓
+MCP Client
+  ↓
+-------------------
+| Filesystem MCP |
+| Git MCP        |
+| Terminal MCP   |
+-------------------
+Suggested Stack
+Backend
+FastAPI
+Agent Framework
+LangGraph
+MCP SDK
+Python MCP SDK
+LLM
+
+Start local:
+
+Ollama
+
+Use:
+
+Qwen2.5-Coder
+DeepSeek Coder
+Llama 3
+Phase-Wise Development Plan
+Phase 1 — Basic MCP Server
+
+Goal:
+Create 2–3 connectors.
+
+Features
+read repo files
+get commits
+run tests
+Time
+
+2–3 days
+
+Phase 2 — Add Agent Reasoning
+
+Goal:
+LLM decides which tool to use.
+
+Example:
+User asks:
+
+“Why is this failing?”
+
+Agent:
+
+reads logs
+checks test file
+inspects recent commits
+Time
+
+3–5 days
+
+Phase 3 — Add Memory
+
+Store:
+
+repo summaries
+architecture notes
+previous analyses
+
+Use:
+
+SQLite
+ChromaDB
+Phase 4 — Advanced Features
+
+Add:
+
+PR review
+code smell detection
+architecture graph
+dependency analysis
+autonomous debugging

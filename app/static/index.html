@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>MCP Engineering Assistant</title>
+    <style>
+      :root {
+        --bg: #0d1117;
+        --panel: #161b22;
+        --panel-2: #1f2630;
+        --border: #30363d;
+        --text: #e6edf3;
+        --muted: #8b949e;
+        --accent: #58a6ff;
+        --accent-2: #3fb950;
+        --warn: #d29922;
+        --danger: #f85149;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; margin: 0; }
+      body {
+        font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        padding: 14px 20px;
+        border-bottom: 1px solid var(--border);
+        background: var(--panel);
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      header h1 {
+        font-size: 16px;
+        margin: 0;
+        font-weight: 600;
+      }
+      header .meta {
+        font-size: 12px;
+        color: var(--muted);
+        display: flex;
+        gap: 12px;
+        flex-wrap: wrap;
+      }
+      header .meta span b { color: var(--text); font-weight: 500; }
+      header button {
+        background: var(--panel-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px 12px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      header button:hover { border-color: var(--accent); }
+      header .status-dot {
+        width: 8px; height: 8px; border-radius: 50%;
+        display: inline-block; margin-right: 6px;
+      }
+      header .status-dot.ok    { background: var(--accent-2); }
+      header .status-dot.bad   { background: var(--danger); }
+
+      main {
+        flex: 1;
+        overflow-y: auto;
+        padding: 20px;
+        max-width: 980px;
+        width: 100%;
+        margin: 0 auto;
+      }
+      .msg {
+        margin: 0 0 20px;
+        padding: 14px 16px;
+        border-radius: 10px;
+        border: 1px solid var(--border);
+      }
+      .msg.user {
+        background: #1e2a3a;
+        border-color: #2d4263;
+      }
+      .msg.assistant { background: var(--panel); }
+      .msg .role {
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--muted);
+        margin-bottom: 6px;
+        letter-spacing: 0.04em;
+      }
+      .msg .content {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+      .msg .content pre {
+        background: #010409;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 10px;
+        overflow-x: auto;
+      }
+      .msg .content code { font-family: ui-monospace, Menlo, Consolas, monospace; }
+      .tool-call {
+        margin: 8px 0;
+        padding: 8px 12px;
+        border-left: 3px solid var(--accent);
+        background: var(--panel-2);
+        border-radius: 0 6px 6px 0;
+        font-size: 12px;
+      }
+      .tool-call.done { border-left-color: var(--accent-2); }
+      .tool-call .tname { color: var(--accent); font-weight: 600; }
+      .tool-call .targs, .tool-call .tout {
+        color: var(--muted);
+        font-family: ui-monospace, Menlo, Consolas, monospace;
+        font-size: 11px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        max-height: 220px;
+        overflow-y: auto;
+        margin-top: 4px;
+      }
+
+      footer {
+        border-top: 1px solid var(--border);
+        background: var(--panel);
+        padding: 12px 20px;
+      }
+      .composer {
+        max-width: 980px;
+        margin: 0 auto;
+        display: flex;
+        gap: 10px;
+      }
+      .composer textarea {
+        flex: 1;
+        background: var(--panel-2);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font: inherit;
+        resize: none;
+        min-height: 44px;
+        max-height: 200px;
+      }
+      .composer textarea:focus { outline: none; border-color: var(--accent); }
+      .composer button {
+        background: var(--accent);
+        color: #0d1117;
+        border: 0;
+        border-radius: 8px;
+        padding: 0 18px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .composer button:disabled { opacity: 0.5; cursor: not-allowed; }
+      .hint { color: var(--muted); font-size: 11px; margin-top: 6px; }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>🛠️ MCP Engineering Assistant</h1>
+      <div class="meta" id="meta">
+        <span><span class="status-dot bad" id="ollama-dot"></span>Ollama: <b id="ollama-model">…</b></span>
+        <span>Workspace: <b id="workspace">…</b></span>
+        <span>Tools: <b id="tool-count">0</b></span>
+        <span>Thread: <b id="thread-id">—</b></span>
+      </div>
+      <div style="margin-left: auto; display: flex; gap: 8px;">
+        <button id="btn-index" title="Re-index workspace into vector memory">Index repo</button>
+        <button id="btn-new">New chat</button>
+      </div>
+    </header>
+
+    <main id="chat"></main>
+
+    <footer>
+      <div class="composer">
+        <textarea id="input" placeholder="Ask something… e.g. 'Explain this repository' or 'Why are tests failing?'"></textarea>
+        <button id="send">Send</button>
+      </div>
+      <div class="hint">Cmd/Ctrl+Enter to send. Streaming over SSE.</div>
+    </footer>
+
+    <script>
+      const chat = document.getElementById("chat");
+      const input = document.getElementById("input");
+      const sendBtn = document.getElementById("send");
+      const indexBtn = document.getElementById("btn-index");
+      const newBtn = document.getElementById("btn-new");
+
+      let threadId = localStorage.getItem("threadId") || newThread();
+
+      function newThread() {
+        const t = "thread-" + Math.random().toString(16).slice(2, 14);
+        localStorage.setItem("threadId", t);
+        document.getElementById("thread-id").textContent = t;
+        return t;
+      }
+      document.getElementById("thread-id").textContent = threadId;
+
+      newBtn.onclick = () => {
+        threadId = newThread();
+        chat.innerHTML = "";
+      };
+
+      indexBtn.onclick = async () => {
+        indexBtn.disabled = true;
+        indexBtn.textContent = "Indexing…";
+        try {
+          const r = await fetch("/api/index", { method: "POST" });
+          const j = await r.json();
+          alert(`Indexed ${j.files_indexed} files / ${j.chunks_indexed} chunks.`);
+        } catch (e) {
+          alert("Indexing failed: " + e);
+        } finally {
+          indexBtn.disabled = false;
+          indexBtn.textContent = "Index repo";
+        }
+      };
+
+      // ----- Health -----
+      async function refreshHealth() {
+        try {
+          const r = await fetch("/api/health");
+          const j = await r.json();
+          document.getElementById("ollama-model").textContent = j.ollama_model;
+          document.getElementById("workspace").textContent = j.workspace_root;
+          document.getElementById("tool-count").textContent = j.tool_count;
+          document.getElementById("ollama-dot").className =
+            "status-dot " + (j.ollama_reachable ? "ok" : "bad");
+        } catch (_) {}
+      }
+      refreshHealth();
+      setInterval(refreshHealth, 15000);
+
+      // ----- Chat rendering -----
+      function addMsg(role, content = "") {
+        const d = document.createElement("div");
+        d.className = "msg " + role;
+        d.innerHTML =
+          '<div class="role">' + role + "</div>" +
+          '<div class="tools"></div>' +
+          '<div class="content"></div>';
+        d.querySelector(".content").textContent = content;
+        chat.appendChild(d);
+        chat.scrollTop = chat.scrollHeight;
+        return d;
+      }
+
+      function addTool(parent, name) {
+        const t = document.createElement("div");
+        t.className = "tool-call";
+        t.innerHTML =
+          '<div><span class="tname">▶ ' + name + "</span></div>" +
+          '<div class="targs"></div><div class="tout"></div>';
+        parent.querySelector(".tools").appendChild(t);
+        chat.scrollTop = chat.scrollHeight;
+        return t;
+      }
+
+      // Very small markdown-ish renderer: code fences only.
+      function renderContent(el, text) {
+        const parts = text.split(/```/);
+        el.innerHTML = "";
+        parts.forEach((p, i) => {
+          if (i % 2 === 1) {
+            const pre = document.createElement("pre");
+            const code = document.createElement("code");
+            code.textContent = p.replace(/^[a-zA-Z0-9_+-]+\n/, "");
+            pre.appendChild(code);
+            el.appendChild(pre);
+          } else {
+            const span = document.createElement("span");
+            span.textContent = p;
+            el.appendChild(span);
+          }
+        });
+      }
+
+      // ----- Send / SSE -----
+      async function send() {
+        const message = input.value.trim();
+        if (!message) return;
+        input.value = "";
+        sendBtn.disabled = true;
+
+        addMsg("user", message);
+        const aMsg = addMsg("assistant", "");
+        const aContent = aMsg.querySelector(".content");
+        let buffer = "";
+        const liveTools = new Map(); // toolCallId -> element
+
+        try {
+          const r = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ message, thread_id: threadId, stream: true }),
+          });
+          if (!r.ok || !r.body) throw new Error("HTTP " + r.status);
+
+          const reader = r.body.getReader();
+          const decoder = new TextDecoder();
+          let leftover = "";
+
+          while (true) {
+            const { value, done } = await reader.read();
+            if (done) break;
+            leftover += decoder.decode(value, { stream: true });
+            const frames = leftover.split("\n\n");
+            leftover = frames.pop();
+            for (const frame of frames) {
+              if (!frame.trim()) continue;
+              const lines = frame.split("\n");
+              let event = "message";
+              let dataStr = "";
+              for (const ln of lines) {
+                if (ln.startsWith("event:")) event = ln.slice(6).trim();
+                else if (ln.startsWith("data:")) dataStr += ln.slice(5).trim();
+              }
+              let data = {};
+              try { data = JSON.parse(dataStr); } catch (_) {}
+
+              if (event === "token") {
+                buffer += data.content || "";
+                renderContent(aContent, buffer);
+              } else if (event === "tool_start") {
+                const t = addTool(aMsg, data.name || "tool");
+                t.querySelector(".targs").textContent =
+                  "args: " + JSON.stringify(data.input || {}, null, 2);
+                liveTools.set((data.name || "") + ":" + Date.now(), t);
+                t._lastKey = (data.name || "") + ":pending";
+                liveTools.set(t._lastKey, t);
+              } else if (event === "tool_end") {
+                const key = (data.name || "") + ":pending";
+                const t = liveTools.get(key);
+                if (t) {
+                  t.classList.add("done");
+                  t.querySelector(".tname").textContent = "✓ " + data.name;
+                  t.querySelector(".tout").textContent =
+                    typeof data.output === "string"
+                      ? data.output
+                      : JSON.stringify(data.output, null, 2);
+                  liveTools.delete(key);
+                }
+              } else if (event === "final") {
+                if (data.content && data.content.length > buffer.length) {
+                  buffer = data.content;
+                  renderContent(aContent, buffer);
+                }
+              } else if (event === "error") {
+                aContent.textContent += "\n\n[error] " + (data.error || "");
+              }
+              chat.scrollTop = chat.scrollHeight;
+            }
+          }
+        } catch (err) {
+          aContent.textContent += "\n\n[network error] " + err.message;
+        } finally {
+          sendBtn.disabled = false;
+        }
+      }
+
+      sendBtn.onclick = send;
+      input.addEventListener("keydown", (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+          e.preventDefault();
+          send();
+        }
+      });
+    </script>
+  </body>
+</html>

@@ -1,0 +1,26 @@
+version: "3.9"
+
+services:
+  assistant:
+    build: .
+    image: mcp-engineering-assistant:latest
+    container_name: mcp-assistant
+    ports:
+      - "8000:8000"
+    environment:
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434}
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5-coder:7b}
+      OLLAMA_EMBED_MODEL: ${OLLAMA_EMBED_MODEL:-nomic-embed-text:latest}
+      WORKSPACE_ROOT: /workspace
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+    volumes:
+      # Mount the repo you want the assistant to operate on at /workspace
+      - ${WORKSPACE_HOST_PATH:-./}:/workspace:ro
+      - assistant-data:/app/data
+    extra_hosts:
+      # Allows the container to reach Ollama running on the host
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+volumes:
+  assistant-data:
