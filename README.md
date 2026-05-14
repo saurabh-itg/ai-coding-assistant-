@@ -170,17 +170,6 @@ The test suite covers:
 
 ---
 
-## Phase plan (from `task.txt`)
-
-| Phase | Status | Notes |
-| ----- | ------ | ----- |
-| 1 — basic MCP servers (read repo, get commits, run tests) | ✅ done | `mcp_servers/*` |
-| 2 — agent reasoning (LLM picks tools) | ✅ done | LangGraph ReAct + `qwen2.5-coder:7b` |
-| 3 — memory (SQLite + ChromaDB) | ✅ done | `AsyncSqliteSaver` + `RepoIndexer` |
-| 4 — advanced (PR review, code-smell, dep graph, autonomous debug) | 🟡 next | extend tools / prompts |
-
----
-
 ## Layout
 
 ```
